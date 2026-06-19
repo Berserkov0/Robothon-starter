@@ -487,7 +487,7 @@ class Simulation:
         # 固定参数：侧面视角，能同时看到机器狗、人形机器人、沙发
         distance = 5.0
         azimuth = 135.0   # 侧面角度
-        elevation = -20.0  # 微俯视
+        elevation = 20.0  # 俯视角度（正值=摄像机在目标上方）
 
         az_rad = np.deg2rad(azimuth)
         el_rad = np.deg2rad(elevation)
