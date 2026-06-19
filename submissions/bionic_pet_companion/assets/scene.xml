@@ -1,0 +1,379 @@
+<mujoco model="bionic_pet_companion">
+  <compiler angle="degree" meshdir="../assets" autolimits="true"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0.1 0.1 0.1"/>
+    <map znear="0.01" zfar="50"/>
+    <quality shadowsize="2048"/>
+    <global offwidth="1280" offheight="720"/>
+  </visual>
+
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast">
+    <flag contact="enable" gravity="enable"/>
+  </option>
+
+  <asset>
+    <!-- Floor texture -->
+    <texture name="tex_wood" type="2d" builtin="checker" width="512" height="512"
+             rgb1="0.8 0.7 0.5" rgb2="0.7 0.6 0.4"/>
+    <material name="mat_wood" texture="tex_wood" reflectance="0.1" shininess="0.3"/>
+    <material name="mat_floor" rgba="0.85 0.8 0.7 1" reflectance="0.05"/>
+
+    <!-- Robot materials -->
+    <material name="mat_dog_body" rgba="0.2 0.3 0.5 1" specular="0.5" shininess="0.8"/>
+    <material name="mat_dog_leg" rgba="0.15 0.25 0.45 1" specular="0.4" shininess="0.6"/>
+    <material name="mat_dog_foot" rgba="0.1 0.1 0.1 1" specular="0.2" shininess="0.3"/>
+    <material name="mat_dog_eye" rgba="0 1 0.8 1" emission="0.5"/>
+
+    <material name="mat_human_body" rgba="0.9 0.9 0.9 1" specular="0.6" shininess="0.9"/>
+    <material name="mat_human_head" rgba="0.85 0.85 0.9 1" specular="0.5" shininess="0.7"/>
+    <material name="mat_human_eye" rgba="0 0.8 1 1" emission="0.5"/>
+    <material name="mat_human_arm" rgba="0.8 0.8 0.8 1" specular="0.5" shininess="0.6"/>
+
+    <!-- Sofa materials - soft plush look -->
+    <material name="mat_sofa_cushion" rgba="0.7 0.5 0.4 1" specular="0.1" shininess="0.2"/>
+    <material name="mat_sofa_frame" rgba="0.3 0.2 0.15 1" specular="0.3" shininess="0.5"/>
+    <material name="mat_sofa_pillow" rgba="0.75 0.55 0.45 1" specular="0.1" shininess="0.1"/>
+
+    <!-- Object materials -->
+    <material name="mat_ball" rgba="1 0.3 0.3 1" specular="0.4" shininess="0.5"/>
+    <material name="mat_cup" rgba="0.6 0.85 1 0.7" specular="0.8" shininess="1"/>
+    <material name="mat_cup_water" rgba="0.4 0.7 1 0.6" specular="0.6" shininess="0.8"/>
+
+    <!-- Soft/flex materials -->
+    <material name="mat_flex_soft" rgba="0.9 0.5 0.4 1" specular="0.1" shininess="0.1"/>
+    <material name="mat_plush" rgba="1 0.6 0.5 1" specular="0.05" shininess="0.05"/>
+    <material name="mat_carpet" rgba="0.6 0.7 0.6 1" specular="0.05" shininess="0.05"/>
+  </asset>
+
+  <worldbody>
+    <!-- ===== LIGHTING ===== -->
+    <light name="light_main" pos="3 0 4" dir="0 0 -1" directional="true" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
+    <light name="light_fill" pos="-2 3 3" dir="0 0 -1" directional="true" diffuse="0.3 0.3 0.3" specular="0.05 0.05 0.05"/>
+    <light name="light_ambient" pos="0 0 5" dir="0 0 -1" directional="true" diffuse="0.2 0.2 0.2"/>
+
+    <!-- ===== FLOOR ===== -->
+    <geom name="floor" type="plane" size="8 8 0.05" material="mat_floor" pos="0 0 0"
+          friction="0.8 0.1 0.1" condim="3"/>
+
+    <!-- ===== CARPET/RUG ===== -->
+    <geom name="carpet" type="box" size="2.5 1.8 0.005" pos="0.5 0 0.002" material="mat_carpet"
+          friction="1.0 0.2 0.1" condim="3"/>
+
+    <!-- ===== SOFA (flexible composite) ===== -->
+    <body name="sofa" pos="2.5 0 0">
+      <!-- Sofa base frame -->
+      <geom name="sofa_base" type="box" size="1.0 0.4 0.15" pos="0 0 0.15" material="mat_sofa_frame"/>
+
+      <!-- Sofa seat cushion - soft contact for plush feel -->
+      <geom name="sofa_seat" type="box" size="0.85 0.35 0.08" pos="0 0 0.35" material="mat_sofa_cushion"
+            friction="0.9 0.1 0.05" solref="0.005 0.6" solimp="0.8 0.9 0.001" mass="2.0"/>
+
+      <!-- Sofa backrest cushion - soft contact -->
+      <geom name="sofa_backrest" type="box" size="0.85 0.08 0.25" pos="0 0.35 0.55" material="mat_sofa_cushion"
+            friction="0.9 0.1 0.05" solref="0.005 0.6" solimp="0.8 0.9 0.001" mass="1.5"/>
+
+      <!-- Left armrest -->
+      <geom name="sofa_arm_left" type="box" size="0.1 0.45 0.25" pos="-0.9 0 0.45" material="mat_sofa_frame"/>
+
+      <!-- Right armrest -->
+      <geom name="sofa_arm_right" type="box" size="0.1 0.45 0.25" pos="0.9 0 0.45" material="mat_sofa_frame"/>
+    </body>
+
+    <!-- Decorative pillows on sofa -->
+    <body name="pillow_left" pos="2.0 0.25 0.55">
+      <freejoint/>
+      <geom name="pillow_left_geom" type="ellipsoid" size="0.15 0.12 0.08" material="mat_sofa_pillow"
+            friction="1.0 0.1 0.05" solref="0.005 0.8" solimp="0.9 0.95 0.001" mass="0.3"/>
+    </body>
+
+    <body name="pillow_right" pos="3.0 0.25 0.55">
+      <freejoint/>
+      <geom name="pillow_right_geom" type="ellipsoid" size="0.15 0.12 0.08" material="mat_sofa_pillow"
+            friction="1.0 0.1 0.05" solref="0.005 0.8" solimp="0.9 0.95 0.001" mass="0.3"/>
+    </body>
+
+    <!-- ===== PLUSH TOY BALL ===== -->
+    <body name="toy_ball" pos="1.0 1.5 0.15">
+      <freejoint/>
+      <geom name="ball_geom" type="sphere" size="0.12" material="mat_ball"
+            friction="0.8 0.05 0.05" solref="0.005 0.8" solimp="0.8 0.95 0.001" mass="0.25"/>
+    </body>
+
+    <!-- ===== WATER CUP ===== -->
+    <body name="cup" pos="0.5 1.2 0.08">
+      <freejoint/>
+      <!-- Cup body -->
+      <geom name="cup_body" type="cylinder" size="0.05 0.08" pos="0 0 0.08" material="mat_cup"
+            friction="0.5 0.05 0.05" mass="0.15"/>
+      <!-- Water surface -->
+      <geom name="cup_water" type="cylinder" size="0.04 0.005" pos="0 0 0.14" material="mat_cup_water"
+            mass="0.02"/>
+      <!-- Cup handle as a box -->
+      <geom name="cup_handle" type="box" size="0.015 0.012 0.025" pos="0.06 0 0.08"
+            material="mat_cup" mass="0.02"/>
+    </body>
+
+    <!-- ===== UNITREE GO1 ROBOT DOG ===== -->
+    <body name="robot_dog" pos="-1.0 0.5 0.35">
+      <joint name="dog_root" type="free"/>
+      <inertial pos="0 0 0" mass="5.0" fullinertia="0.05 0.15 0.15 0 0 0"/>
+
+      <!-- Main body -->
+      <geom name="dog_body" type="box" size="0.35 0.12 0.08" material="mat_dog_body"
+            friction="0.5 0.05 0.05"/>
+      <!-- Head -->
+      <geom name="dog_head" type="box" size="0.08 0.08 0.06" pos="0.38 0 0.02" material="mat_dog_body"/>
+      <!-- Eyes -->
+      <geom name="dog_eye_l" type="sphere" size="0.015" pos="0.42 0.04 0.05" material="mat_dog_eye"/>
+      <geom name="dog_eye_r" type="sphere" size="0.015" pos="0.42 -0.04 0.05" material="mat_dog_eye"/>
+      <!-- Ears -->
+      <geom name="dog_ear_l" type="box" size="0.02 0.015 0.04" pos="0.35 0.05 0.08" euler="0 15 0" material="mat_dog_leg"/>
+      <geom name="dog_ear_r" type="box" size="0.02 0.015 0.04" pos="0.35 -0.05 0.08" euler="0 -15 0" material="mat_dog_leg"/>
+      <!-- Tail -->
+      <geom name="dog_tail" type="capsule" size="0.015 0.08" pos="-0.39 0 0.05" euler="0 30 0" material="mat_dog_leg"/>
+
+      <!-- ===== LEGS (each with 3 DOF: hip, thigh, knee) ===== -->
+      <!-- FRONT LEFT LEG -->
+      <body name="dog_fl_hip" pos="0.22 0.08 -0.05">
+        <joint name="dog_fl_hip_x" type="hinge" axis="1 0 0" range="-30 30" armature="0.01"/>
+        <joint name="dog_fl_hip_z" type="hinge" axis="0 0 1" range="-60 60" armature="0.01"/>
+        <geom name="dog_fl_hip_geom" type="capsule" size="0.025 0.04" pos="0 0 -0.02" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+        <body name="dog_fl_thigh" pos="0 0 -0.06">
+          <joint name="dog_fl_knee" type="hinge" axis="0 1 0" range="-100 30" armature="0.01"/>
+          <geom name="dog_fl_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+          <body name="dog_fl_shank" pos="0 0 -0.1">
+            <geom name="dog_fl_shank_geom" type="capsule" size="0.02 0.09" pos="0 0 -0.04" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+            <geom name="dog_fl_foot" type="sphere" size="0.03" pos="0 0 -0.09" material="mat_dog_foot"
+                        friction="0.9 0.1 0.05" solref="0.005 0.7" solimp="0.8 0.9 0.001"/>
+            <site name="dog_fl_touch" type="sphere" size="0.03" pos="0 0 -0.09"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- FRONT RIGHT LEG -->
+      <body name="dog_fr_hip" pos="0.22 -0.08 -0.05">
+        <joint name="dog_fr_hip_x" type="hinge" axis="1 0 0" range="-30 30" armature="0.01"/>
+        <joint name="dog_fr_hip_z" type="hinge" axis="0 0 1" range="-60 60" armature="0.01"/>
+        <geom name="dog_fr_hip_geom" type="capsule" size="0.025 0.04" pos="0 0 -0.02" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+        <body name="dog_fr_thigh" pos="0 0 -0.06">
+          <joint name="dog_fr_knee" type="hinge" axis="0 1 0" range="-100 30" armature="0.01"/>
+          <geom name="dog_fr_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+          <body name="dog_fr_shank" pos="0 0 -0.1">
+            <geom name="dog_fr_shank_geom" type="capsule" size="0.02 0.09" pos="0 0 -0.04" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+            <geom name="dog_fr_foot" type="sphere" size="0.03" pos="0 0 -0.09" material="mat_dog_foot"
+                        friction="0.9 0.1 0.05" solref="0.005 0.7" solimp="0.8 0.9 0.001"/>
+            <site name="dog_fr_touch" type="sphere" size="0.03" pos="0 0 -0.09"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- REAR LEFT LEG -->
+      <body name="dog_rl_hip" pos="-0.22 0.08 -0.05">
+        <joint name="dog_rl_hip_x" type="hinge" axis="1 0 0" range="-30 30" armature="0.01"/>
+        <joint name="dog_rl_hip_z" type="hinge" axis="0 0 1" range="-60 60" armature="0.01"/>
+        <geom name="dog_rl_hip_geom" type="capsule" size="0.025 0.04" pos="0 0 -0.02" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+        <body name="dog_rl_thigh" pos="0 0 -0.06">
+          <joint name="dog_rl_knee" type="hinge" axis="0 1 0" range="-100 30" armature="0.01"/>
+          <geom name="dog_rl_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+          <body name="dog_rl_shank" pos="0 0 -0.1">
+            <geom name="dog_rl_shank_geom" type="capsule" size="0.02 0.09" pos="0 0 -0.04" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+            <geom name="dog_rl_foot" type="sphere" size="0.03" pos="0 0 -0.09" material="mat_dog_foot"
+                        friction="0.9 0.1 0.05" solref="0.005 0.7" solimp="0.8 0.9 0.001"/>
+            <site name="dog_rl_touch" type="sphere" size="0.03" pos="0 0 -0.09"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- REAR RIGHT LEG -->
+      <body name="dog_rr_hip" pos="-0.22 -0.08 -0.05">
+        <joint name="dog_rr_hip_x" type="hinge" axis="1 0 0" range="-30 30" armature="0.01"/>
+        <joint name="dog_rr_hip_z" type="hinge" axis="0 0 1" range="-60 60" armature="0.01"/>
+        <geom name="dog_rr_hip_geom" type="capsule" size="0.025 0.04" pos="0 0 -0.02" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+        <body name="dog_rr_thigh" pos="0 0 -0.06">
+          <joint name="dog_rr_knee" type="hinge" axis="0 1 0" range="-100 30" armature="0.01"/>
+          <geom name="dog_rr_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+          <body name="dog_rr_shank" pos="0 0 -0.1">
+            <geom name="dog_rr_shank_geom" type="capsule" size="0.02 0.09" pos="0 0 -0.04" material="mat_dog_leg" friction="0.5 0.05 0.05"/>
+            <geom name="dog_rr_foot" type="sphere" size="0.03" pos="0 0 -0.09" material="mat_dog_foot"
+                        friction="0.9 0.1 0.05" solref="0.005 0.7" solimp="0.8 0.9 0.001"/>
+            <site name="dog_rr_touch" type="sphere" size="0.03" pos="0 0 -0.09"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- Body touch sensors -->
+      <site name="dog_body_touch" type="sphere" size="0.05" pos="0 0 0.08"/>
+      <site name="dog_head_touch" type="sphere" size="0.04" pos="0.38 0 0.06"/>
+    </body>
+
+    <!-- ===== HUMANOID COMPANION ROBOT ===== -->
+    <body name="humanoid" pos="0.5 0 0.55">
+      <joint name="humanoid_root" type="free"/>
+      <inertial pos="0 0 0.15" mass="3.0" fullinertia="0.02 0.04 0.04 0 0 0"/>
+
+      <!-- Torso -->
+      <geom name="human_torso" type="box" size="0.08 0.06 0.15" pos="0 0 0.15" material="mat_human_body"
+            friction="0.5 0.05 0.05"/>
+
+      <!-- Head -->
+      <body name="human_head" pos="0 0 0.32">
+        <joint name="human_neck" type="hinge" axis="0 0 1" range="-45 45" armature="0.005"/>
+        <geom name="human_head_geom" type="sphere" size="0.06" pos="0 0 0.04" material="mat_human_head"/>
+        <geom name="human_eye_l" type="sphere" size="0.012" pos="0.025 0.04 0.06" material="mat_human_eye"/>
+        <geom name="human_eye_r" type="sphere" size="0.012" pos="0.025 -0.04 0.06" material="mat_human_eye"/>
+        <!-- Antenna -->
+        <geom name="human_antenna" type="capsule" size="0.008 0.05" pos="0 0 0.12" material="mat_human_eye"/>
+        <!-- Head touch sensor -->
+        <site name="human_head_touch" type="sphere" size="0.06" pos="0 0 0.04"/>
+      </body>
+
+      <!-- LEFT ARM -->
+      <body name="human_la_shoulder" pos="0 0.07 0.25">
+        <joint name="human_la_shoulder_x" type="hinge" axis="1 0 0" range="-90 60" armature="0.005"/>
+        <joint name="human_la_shoulder_z" type="hinge" axis="0 0 1" range="-180 30" armature="0.005"/>
+        <geom name="human_la_shoulder_geom" type="capsule" size="0.025 0.03" material="mat_human_arm"/>
+        <body name="human_la_elbow" pos="0 0.06 0">
+          <joint name="human_la_elbow" type="hinge" axis="0 1 0" range="-120 5" armature="0.005"/>
+          <geom name="human_la_upper_geom" type="capsule" size="0.022 0.09" pos="0 0.04 0" material="mat_human_arm"/>
+          <body name="human_la_hand" pos="0 0.09 0">
+            <geom name="human_la_hand_geom" type="capsule" size="0.018 0.07" pos="0 0.03 0" material="mat_human_arm"/>
+            <geom name="human_la_gripper" type="capsule" size="0.015 0.04" pos="0 0.07 0" material="mat_human_body" friction="0.8 0.1 0.05"/>
+            <!-- Hand touch sensor -->
+            <site name="human_la_touch" type="sphere" size="0.025" pos="0 0.09 0"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- RIGHT ARM -->
+      <body name="human_ra_shoulder" pos="0 -0.07 0.25">
+        <joint name="human_ra_shoulder_x" type="hinge" axis="1 0 0" range="-90 60" armature="0.005"/>
+        <joint name="human_ra_shoulder_z" type="hinge" axis="0 0 1" range="-30 180" armature="0.005"/>
+        <geom name="human_ra_shoulder_geom" type="capsule" size="0.025 0.03" material="mat_human_arm"/>
+        <body name="human_ra_elbow" pos="0 -0.06 0">
+          <joint name="human_ra_elbow" type="hinge" axis="0 1 0" range="-120 5" armature="0.005"/>
+          <geom name="human_ra_upper_geom" type="capsule" size="0.022 0.09" pos="0 -0.04 0" material="mat_human_arm"/>
+          <body name="human_ra_hand" pos="0 -0.09 0">
+            <geom name="human_ra_hand_geom" type="capsule" size="0.018 0.07" pos="0 -0.03 0" material="mat_human_arm"/>
+            <geom name="human_ra_gripper" type="capsule" size="0.015 0.04" pos="0 -0.07 0" material="mat_human_body" friction="0.8 0.1 0.05"/>
+            <site name="human_ra_touch" type="sphere" size="0.025" pos="0 -0.09 0"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- LEFT LEG -->
+      <body name="human_ll_hip" pos="0 0.04 0.02">
+        <joint name="human_ll_hip_x" type="hinge" axis="1 0 0" range="-45 45" armature="0.008"/>
+        <joint name="human_ll_hip_z" type="hinge" axis="0 0 1" range="-30 60" armature="0.008"/>
+        <geom name="human_ll_hip_geom" type="capsule" size="0.025 0.03" pos="0 0 -0.01" material="mat_human_arm"/>
+        <body name="human_ll_knee" pos="0 0 -0.05">
+          <joint name="human_ll_knee" type="hinge" axis="0 1 0" range="-5 100" armature="0.008"/>
+          <geom name="human_ll_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_human_arm"/>
+          <body name="human_ll_foot" pos="0 0 -0.1">
+            <geom name="human_ll_shank_geom" type="capsule" size="0.02 0.1" pos="0 0 -0.05" material="mat_human_arm"/>
+            <geom name="human_ll_foot_geom" type="box" size="0.04 0.025 0.015" pos="0.02 0 -0.11" material="mat_dog_foot" friction="0.9 0.1 0.05"/>
+            <site name="human_ll_touch" type="sphere" size="0.025" pos="0 0 -0.11"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- RIGHT LEG -->
+      <body name="human_rl_hip" pos="0 -0.04 0.02">
+        <joint name="human_rl_hip_x" type="hinge" axis="1 0 0" range="-45 45" armature="0.008"/>
+        <joint name="human_rl_hip_z" type="hinge" axis="0 0 1" range="-60 30" armature="0.008"/>
+        <geom name="human_rl_hip_geom" type="capsule" size="0.025 0.03" pos="0 0 -0.01" material="mat_human_arm"/>
+        <body name="human_rl_knee" pos="0 0 -0.05">
+          <joint name="human_rl_knee" type="hinge" axis="0 1 0" range="-5 100" armature="0.008"/>
+          <geom name="human_rl_thigh_geom" type="capsule" size="0.022 0.1" pos="0 0 -0.05" material="mat_human_arm"/>
+          <body name="human_rl_foot" pos="0 0 -0.1">
+            <geom name="human_rl_shank_geom" type="capsule" size="0.02 0.1" pos="0 0 -0.05" material="mat_human_arm"/>
+            <geom name="human_rl_foot_geom" type="box" size="0.04 0.025 0.015" pos="0.02 0 -0.11" material="mat_dog_foot" friction="0.9 0.1 0.05"/>
+            <site name="human_rl_touch" type="sphere" size="0.025" pos="0 0 -0.11"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- Body touch sensor -->
+      <site name="human_body_touch" type="sphere" size="0.05" pos="0 0 0.15"/>
+    </body>
+
+    <!-- ===== SMALL OBSTACLES (boxes, etc.) ===== -->
+    <body name="obstacle_box" pos="1.5 0 0.1">
+      <freejoint/>
+      <geom name="obstacle_geom" type="box" size="0.15 0.15 0.1" rgba="0.5 0.5 0.5 1"
+            friction="0.6 0.05 0.05" mass="0.5"/>
+    </body>
+
+    <body name="obstacle_cylinder" pos="-0.5 1.5 0.15">
+      <freejoint/>
+      <geom name="obstacle_cyl_geom" type="cylinder" size="0.08 0.15" rgba="0.4 0.6 0.4 1"
+            friction="0.6 0.05 0.05" mass="0.3"/>
+    </body>
+
+    <!-- ===== CAMERAS ===== -->
+    <camera name="overhead" mode="fixed" pos="0 4 5" quat="0.6 0.4 0 0"/>
+    <camera name="tracking" mode="trackcom" target="robot_dog" pos="0 -3 2" quat="0.7 0.7 0 0"/>
+    <camera name="front" mode="fixed" pos="4 0 1.5" quat="0.55 0.45 0 0"/>
+    <camera name="closeup" mode="trackcom" target="humanoid" pos="0 -1.5 1.2" quat="0.6 0.6 0 0"/>
+  </worldbody>
+
+  <!-- ===== ACTUATORS ===== -->
+  <actuator>
+    <!-- Robot Dog actuators -->
+    <position name="dog_fl_hip_x_act" joint="dog_fl_hip_x" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_fl_hip_z_act" joint="dog_fl_hip_z" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_fl_knee_act" joint="dog_fl_knee" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_fr_hip_x_act" joint="dog_fr_hip_x" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_fr_hip_z_act" joint="dog_fr_hip_z" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_fr_knee_act" joint="dog_fr_knee" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rl_hip_x_act" joint="dog_rl_hip_x" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rl_hip_z_act" joint="dog_rl_hip_z" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rl_knee_act" joint="dog_rl_knee" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rr_hip_x_act" joint="dog_rr_hip_x" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rr_hip_z_act" joint="dog_rr_hip_z" kp="100" kv="10" forcerange="-50 50"/>
+    <position name="dog_rr_knee_act" joint="dog_rr_knee" kp="100" kv="10" forcerange="-50 50"/>
+
+    <!-- Humanoid actuators -->
+    <position name="human_neck_act" joint="human_neck" kp="50" kv="5" forcerange="-20 20"/>
+    <position name="human_la_shoulder_x_act" joint="human_la_shoulder_x" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_la_shoulder_z_act" joint="human_la_shoulder_z" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_la_elbow_act" joint="human_la_elbow" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_ra_shoulder_x_act" joint="human_ra_shoulder_x" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_ra_shoulder_z_act" joint="human_ra_shoulder_z" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_ra_elbow_act" joint="human_ra_elbow" kp="80" kv="8" forcerange="-30 30"/>
+    <position name="human_ll_hip_x_act" joint="human_ll_hip_x" kp="100" kv="10" forcerange="-30 30"/>
+    <position name="human_ll_hip_z_act" joint="human_ll_hip_z" kp="100" kv="10" forcerange="-30 30"/>
+    <position name="human_ll_knee_act" joint="human_ll_knee" kp="100" kv="10" forcerange="-30 30"/>
+    <position name="human_rl_hip_x_act" joint="human_rl_hip_x" kp="100" kv="10" forcerange="-30 30"/>
+    <position name="human_rl_hip_z_act" joint="human_rl_hip_z" kp="100" kv="10" forcerange="-30 30"/>
+    <position name="human_rl_knee_act" joint="human_rl_knee" kp="100" kv="10" forcerange="-30 30"/>
+  </actuator>
+
+  <!-- ===== SENSORS (touch/tactile) ===== -->
+  <sensor>
+    <!-- Touch sensors on robot dog feet -->
+    <touch name="dog_fl_touch_sensor" site="dog_fl_touch"/>
+    <touch name="dog_fr_touch_sensor" site="dog_fr_touch"/>
+    <touch name="dog_rl_touch_sensor" site="dog_rl_touch"/>
+    <touch name="dog_rr_touch_sensor" site="dog_rr_touch"/>
+    <touch name="dog_body_touch_sensor" site="dog_body_touch"/>
+    <touch name="dog_head_touch_sensor" site="dog_head_touch"/>
+
+    <!-- Touch sensors on humanoid -->
+    <touch name="human_head_touch_sensor" site="human_head_touch"/>
+    <touch name="human_la_touch_sensor" site="human_la_touch"/>
+    <touch name="human_ra_touch_sensor" site="human_ra_touch"/>
+    <touch name="human_ll_touch_sensor" site="human_ll_touch"/>
+    <touch name="human_rl_touch_sensor" site="human_rl_touch"/>
+    <touch name="human_body_touch_sensor" site="human_body_touch"/>
+
+    <!-- Position sensors for controllers -->
+    <framepos name="dog_pos" objtype="body" objname="robot_dog"/>
+    <framequat name="dog_quat" objtype="body" objname="robot_dog"/>
+    <framepos name="human_pos" objtype="body" objname="humanoid"/>
+    <framequat name="human_quat" objtype="body" objname="humanoid"/>
+    <framepos name="ball_pos" objtype="body" objname="toy_ball"/>
+    <framepos name="cup_pos" objtype="body" objname="cup"/>
+  </sensor>
+
+  </mujoco>
