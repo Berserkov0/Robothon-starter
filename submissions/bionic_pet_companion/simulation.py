@@ -93,7 +93,7 @@ class DogController(Controller):
         ]
 
         # 行为状态
-        self.mode = "idle"  # idle, walking, touched, playing
+        self.mode = "walking"  # 直接开始走路，不浪费帧
         self.touch_cooldown = 0
         self.wag_phase = 0.0
         self.turn_target = 0.0
@@ -293,7 +293,7 @@ class HumanoidController(Controller):
         ]
 
         self.mode = "idle"
-        self.behavior_phase = 0.0
+        self.behavior_phase = 3.0  # 跳过前3秒站立，直接进入挥手
         self.behavior_timer = 0.0
         self.touch_cooldown = 0.0
         self.walk_phase = 0.0
@@ -368,30 +368,28 @@ class HumanoidController(Controller):
         # 周期性行为切换
         if self.mode == "idle":
             self.behavior_phase += dt
-            cycle = self.behavior_phase % 15.0
+            cycle = self.behavior_phase % 10.0  # 10秒完整循环
 
-            if cycle < 3.0:
-                # 站立
+            if cycle < 2.0:
+                # 站立 + 头部转动
                 targets = self.stand_pose.copy()
-                # 头部微微转动
                 targets[0] = 0.2 * np.sin(self.behavior_phase * 1.5)
-            elif cycle < 6.0:
+            elif cycle < 4.5:
                 # 挥手
                 targets = self.wave_pose.copy()
                 wave = 0.3 * np.sin(self.behavior_phase * 5.0)
                 targets[1] += wave
                 targets[0] = 0.3 * np.sin(self.behavior_phase * 2.0)
-            elif cycle < 9.0:
+            elif cycle < 7.0:
                 # 递物
-                t = (cycle - 6.0) / 3.0
+                t = (cycle - 4.5) / 2.5
                 targets = self.stand_pose * (1 - t) + self.offer_pose * t
                 targets[0] = 0.2 * np.sin(self.behavior_phase * 2.0)
-            elif cycle < 12.0:
+            elif cycle < 9.0:
                 # 收回手臂
-                t = (cycle - 9.0) / 3.0
+                t = (cycle - 7.0) / 2.0
                 targets = self.offer_pose * (1 - t) + self.wave_pose * t
             else:
-                # 回到站立
                 targets = self.stand_pose.copy()
 
         elif self.mode == "touched":
@@ -484,10 +482,10 @@ class Simulation:
         """简单跟踪摄像机：始终对准两机器人中点，保持固定距离和角度"""
         center = (dog_pos + human_pos) / 2.0
 
-        # 固定参数：侧面视角，能同时看到机器狗、人形机器人、沙发
-        distance = 5.0
-        azimuth = 135.0   # 侧面角度
-        elevation = 20.0  # 俯视角度（正值=摄像机在目标上方）
+        # 固定参数：侧面俯视，双机器人+沙发同框
+        distance = 3.5
+        azimuth = 155.0
+        elevation = 15.0
 
         az_rad = np.deg2rad(azimuth)
         el_rad = np.deg2rad(elevation)
@@ -632,7 +630,7 @@ def main():
     sim = Simulation(str(scene_path), render_mode="offscreen")
 
     # 运行仿真并录制视频
-    duration = 30.0  # 30秒
+    duration = 20.0  # 20秒
     sim.run(duration=duration, record_video=True, video_path=str(video_path))
 
     # 转码为 H.264 通用格式
