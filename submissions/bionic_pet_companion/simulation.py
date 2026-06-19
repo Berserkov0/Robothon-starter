@@ -419,6 +419,84 @@ class HumanoidController(Controller):
 
 
 # ============================================================
+# 电影级运镜摄像机
+# ============================================================
+
+class CinematicCamera:
+    """电影级运镜：环绕、推拉、摇移，自动跟踪双机器人"""
+
+    def __init__(self):
+        self.time = 0.0
+        # 基础参数
+        self.base_distance = 5.0    # 基础距离
+        self.base_height = 2.5      # 基础高度
+        self.base_azimuth = 0.0     # 基础方位角
+
+    def update(self, dt, dog_pos, human_pos):
+        """更新摄像机位姿，返回 (lookat, distance, azimuth, elevation)"""
+        self.time += dt
+
+        # 场景中心：狗和人形机器人的中点
+        center = (dog_pos + human_pos) / 2.0
+        # 让中心稍微偏向人形机器人，方便展示交互
+        center = center * 0.7 + human_pos * 0.3
+
+        # 30秒的电影运镜脚本
+        t = self.time
+
+        # 阶段划分
+        if t < 5.0:
+            # 阶段1：远景建立镜头 - 从高处俯瞰整个房间，缓慢下降
+            progress = t / 5.0
+            distance = 6.0 - progress * 1.5  # 6.0 -> 4.5
+            height = 4.0 - progress * 1.0     # 4.0 -> 3.0
+            azimuth = progress * 30.0         # 0 -> 30度，缓慢旋转展示场景
+            elevation = -25.0 - progress * 5.0  # 俯视角度渐减
+
+        elif t < 10.0:
+            # 阶段2：中景环绕 - 围绕两个机器人旋转
+            progress = (t - 5.0) / 5.0
+            distance = 4.5 - progress * 0.5    # 4.5 -> 4.0
+            height = 3.0 - progress * 0.5      # 3.0 -> 2.5
+            azimuth = 30.0 + progress * 90.0   # 30 -> 120度，绕半圈
+            elevation = -30.0 + progress * 5.0  # 逐渐变平
+
+        elif t < 15.0:
+            # 阶段3：低角度跟随 - 展示机器狗行走
+            progress = (t - 10.0) / 5.0
+            distance = 4.0 - progress * 1.0    # 4.0 -> 3.0，推近
+            height = 2.5 - progress * 1.0      # 2.5 -> 1.5，降低
+            azimuth = 120.0 + progress * 40.0  # 120 -> 160
+            elevation = -25.0 + progress * 15.0  # 变平，接近平视
+
+        elif t < 20.0:
+            # 阶段4：特写人形机器人 - 展示挥手/递物
+            progress = (t - 15.0) / 5.0
+            distance = 3.0 + progress * 0.5     # 3.0 -> 3.5，微微拉远
+            height = 1.5 + progress * 0.3       # 1.5 -> 1.8
+            azimuth = 160.0 + progress * 30.0   # 160 -> 190
+            elevation = -10.0 + progress * 5.0  # 微调
+
+        elif t < 25.0:
+            # 阶段5：侧面环绕 - 展示沙发和整体环境
+            progress = (t - 20.0) / 5.0
+            distance = 3.5 + progress * 1.5    # 3.5 -> 5.0，拉远
+            height = 1.8 + progress * 1.0      # 1.8 -> 2.8
+            azimuth = 190.0 + progress * 80.0  # 190 -> 270
+            elevation = -5.0 - progress * 15.0 # 俯视
+
+        else:
+            # 阶段6：结束 - 拉远全景
+            progress = (t - 25.0) / 5.0
+            distance = 5.0 + progress * 1.5    # 5.0 -> 6.5
+            height = 2.8 + progress * 1.2      # 2.8 -> 4.0
+            azimuth = 270.0 + progress * 45.0  # 270 -> 315
+            elevation = -20.0 - progress * 10.0
+
+        return center, distance, azimuth, elevation
+
+
+# ============================================================
 # 仿真场景管理器
 # ============================================================
 
@@ -450,8 +528,8 @@ class Simulation:
         self.frame_count = 0
 
         # 摄像机
-        self.camera_name = "tracking"
-        self.camera_switch_timer = 0.0
+        self.cinematic_cam = CinematicCamera()
+        self.camera_name = "tracking"  # fallback
 
         # 性能统计
         self.touch_events = 0
@@ -481,12 +559,39 @@ class Simulation:
             "cup_pos": get_sensor("cup_pos"),
         }
 
-    def update_camera(self):
-        """动态切换摄像机角度"""
-        self.camera_switch_timer += self.dt
-        cameras = ["tracking", "front", "closeup", "overhead"]
-        idx = int(self.camera_switch_timer / 4.0) % len(cameras)
-        self.camera_name = cameras[idx]
+    def update_camera(self, dog_pos, human_pos):
+        """电影级运镜：计算 free camera 位姿"""
+        lookat, distance, azimuth, elevation = self.cinematic_cam.update(
+            self.dt, dog_pos, human_pos
+        )
+
+        # 球坐标转笛卡尔坐标
+        az_rad = np.deg2rad(azimuth)
+        el_rad = np.deg2rad(elevation)
+
+        cam_x = lookat[0] + distance * np.cos(el_rad) * np.cos(az_rad)
+        cam_y = lookat[1] + distance * np.cos(el_rad) * np.sin(az_rad)
+        cam_z = lookat[2] + distance * np.sin(el_rad)
+
+        cam_pos = np.array([cam_x, cam_y, cam_z])
+
+        # 计算摄像机朝向矩阵
+        forward = lookat - cam_pos
+        forward = forward / (np.linalg.norm(forward) + 1e-10)
+
+        # 世界 up 向量
+        world_up = np.array([0.0, 0.0, 1.0])
+        right = np.cross(forward, world_up)
+        right = right / (np.linalg.norm(right) + 1e-10)
+        up = np.cross(right, forward)
+
+        # 构建旋转矩阵 (列主序)
+        rot = np.column_stack([right, up, -forward])
+
+        # 设置摄像机
+        cam = self.data.camera("tracking")
+        cam.xpos = cam_pos
+        cam.xmat = rot.T.flatten()  # MuJoCo 使用行主序
 
     def render_frame(self):
         """渲染当前帧"""
@@ -522,7 +627,7 @@ class Simulation:
         self.frame_count += 1
 
         # 更新摄像机
-        self.update_camera()
+        self.update_camera(dog_pos, human_pos)
 
         # 记录狗的模式
         self.dog_mode_history.append(self.dog.mode)
@@ -578,7 +683,7 @@ class Simulation:
             return
 
         h, w = frames[0].shape[:2]
-        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(str(video_path), fourcc, fps, (w, h))
 
         for frame in frames:
@@ -610,6 +715,24 @@ def main():
     # 运行仿真并录制视频
     duration = 30.0  # 30秒
     sim.run(duration=duration, record_video=True, video_path=str(video_path))
+
+    # 转码为 H.264 通用格式
+    if video_path.exists():
+        import subprocess
+        tmp_path = video_path.with_suffix(".tmp.mp4")
+        video_path.rename(tmp_path)
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", str(tmp_path),
+            "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            str(video_path)
+        ], capture_output=True)
+        if result.returncode == 0:
+            tmp_path.unlink()
+            print(f"Video transcoded to H.264: {video_path}")
+        else:
+            tmp_path.rename(video_path)
+            print("Warning: H.264 transcode failed, kept original mp4v")
 
     print("\nDone! All outputs saved to:", project_dir)
 

@@ -61,7 +61,7 @@
           friction="1.0 0.2 0.1" condim="3"/>
 
     <!-- ===== SOFA (flexible composite) ===== -->
-    <body name="sofa" pos="2.5 0 0">
+    <body name="sofa" pos="3.5 0 0">
       <!-- Sofa base frame -->
       <geom name="sofa_base" type="box" size="1.0 0.4 0.15" pos="0 0 0.15" material="mat_sofa_frame"/>
 
@@ -81,13 +81,13 @@
     </body>
 
     <!-- Decorative pillows on sofa -->
-    <body name="pillow_left" pos="2.0 0.25 0.55">
+    <body name="pillow_left" pos="3.0 0.25 0.55">
       <freejoint/>
       <geom name="pillow_left_geom" type="ellipsoid" size="0.15 0.12 0.08" material="mat_sofa_pillow"
             friction="1.0 0.1 0.05" solref="0.005 0.8" solimp="0.9 0.95 0.001" mass="0.3"/>
     </body>
 
-    <body name="pillow_right" pos="3.0 0.25 0.55">
+    <body name="pillow_right" pos="4.0 0.25 0.55">
       <freejoint/>
       <geom name="pillow_right_geom" type="ellipsoid" size="0.15 0.12 0.08" material="mat_sofa_pillow"
             friction="1.0 0.1 0.05" solref="0.005 0.8" solimp="0.9 0.95 0.001" mass="0.3"/>
@@ -115,7 +115,7 @@
     </body>
 
     <!-- ===== UNITREE GO1 ROBOT DOG ===== -->
-    <body name="robot_dog" pos="-1.0 0.5 0.35">
+    <body name="robot_dog" pos="-2.5 0.5 0.35">
       <joint name="dog_root" type="free"/>
       <inertial pos="0 0 0" mass="5.0" fullinertia="0.05 0.15 0.15 0 0 0"/>
 
@@ -208,7 +208,7 @@
     </body>
 
     <!-- ===== HUMANOID COMPANION ROBOT ===== -->
-    <body name="humanoid" pos="0.5 0 0.55">
+    <body name="humanoid" pos="0.0 0 0.55">
       <joint name="humanoid_root" type="free"/>
       <inertial pos="0 0 0.15" mass="3.0" fullinertia="0.02 0.04 0.04 0 0 0"/>
 
@@ -311,10 +311,7 @@
     </body>
 
     <!-- ===== CAMERAS ===== -->
-    <camera name="overhead" mode="fixed" pos="0 4 5" quat="0.6 0.4 0 0"/>
-    <camera name="tracking" mode="trackcom" target="robot_dog" pos="0 -3 2" quat="0.7 0.7 0 0"/>
-    <camera name="front" mode="fixed" pos="4 0 1.5" quat="0.55 0.45 0 0"/>
-    <camera name="closeup" mode="trackcom" target="humanoid" pos="0 -1.5 1.2" quat="0.6 0.6 0 0"/>
+    <camera name="tracking" mode="fixed" pos="3 5 4" quat="0.55 0.45 0 0"/>
   </worldbody>
 
   <!-- ===== ACTUATORS ===== -->
