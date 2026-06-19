@@ -66,7 +66,7 @@ Bionic Quadruped & Humanoid Pet Companion Robot — Home Interaction Simulation
 - Python 3.10+
 - MuJoCo 3.0+
 - NumPy
-- OpenCV-Python
+- Matplotlib
 
 ### 安装
 ```bash
@@ -76,17 +76,13 @@ pip install -r requirements.txt
 
 ### 运行仿真
 ```bash
-# 有显示器环境
-python3 simulation.py
-
-# 无显示器环境（使用虚拟显示）
-MUJOCO_GL=glfw xvfb-run -a python3 simulation.py
+python3 render_video.py
 ```
 
 ### 输出
-- `demo_video.mp4`：1280×720 H.264 编码的演示视频（30 fps）
+- `demo_video.mp4`：1440×960 H.264 编码的演示视频（20 秒，30 fps）
 
 ## Demo video
-`demo_video.mp4`（31 秒，1280×720，H.264）
+`demo_video.mp4`（20 秒，1440×960，H.264）
 
-视频展示了完整的交互流程：机器狗从静止状态开始，跟随人形机器人移动，人形机器人周期性展示挥手、递物等行为，玩具球和水杯参与物理交互，摄像机在不同角度间自动切换。
+视频展示了完整的交互流程：机器狗从静止状态开始，跟随人形机器人移动，人形机器人周期性展示挥手、递物等行为，玩具球和水杯参与物理交互。
