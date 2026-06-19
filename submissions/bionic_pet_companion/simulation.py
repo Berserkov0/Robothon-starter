@@ -578,7 +578,7 @@ class Simulation:
             return
 
         h, w = frames[0].shape[:2]
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
         out = cv2.VideoWriter(str(video_path), fourcc, fps, (w, h))
 
         for frame in frames:
