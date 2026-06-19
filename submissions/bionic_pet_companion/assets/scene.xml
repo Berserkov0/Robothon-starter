@@ -208,7 +208,7 @@
     </body>
 
     <!-- ===== HUMANOID COMPANION ROBOT ===== -->
-    <body name="humanoid" pos="0.0 0 0.55">
+    <body name="humanoid" pos="-0.3 0 0.45">
       <joint name="humanoid_root" type="free"/>
       <inertial pos="0 0 0.15" mass="3.0" fullinertia="0.02 0.04 0.04 0 0 0"/>
 

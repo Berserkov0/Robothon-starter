@@ -226,12 +226,12 @@ class DogController(Controller):
             # walking - 跟随人形机器人
             direction = human_pos[:2] - dog_pos[:2]
             dist = np.linalg.norm(direction)
-            if dist > 1.0:
+            if dist > 0.5:
                 direction = direction / (dist + 0.01)
                 dog_forward = np.array([1.0, 0.0, 0.0])
                 cross = np.cross(dog_forward[:2], direction[:2])
                 turn = np.clip(cross * 0.2, -0.1, 0.1)
-                speed = min(dist * 0.5, 1.0)
+                speed = min(dist * 0.8, 1.5)
                 self.gait_phase += dt * self.gait_frequency * speed * 2.0 * np.pi
                 targets = self.get_trot_gait(
                     self.gait_phase, self.gait_frequency,
@@ -432,6 +432,9 @@ class Simulation:
         self.model = mujoco.MjModel.from_xml_path(str(scene_path))
         self.data = mujoco.MjData(self.model)
 
+        # 运行一次物理步以初始化传感器数据
+        mujoco.mj_step(self.model, self.data)
+
         # 渲染器
         if render_mode == "offscreen":
             self.renderer = mujoco.Renderer(self.model, 720, 1280)
@@ -482,10 +485,10 @@ class Simulation:
         """简单跟踪摄像机：始终对准两机器人中点，保持固定距离和角度"""
         center = (dog_pos + human_pos) / 2.0
 
-        # 固定参数：侧面俯视，双机器人+沙发同框
-        distance = 3.5
-        azimuth = 155.0
-        elevation = 15.0
+        # 固定参数：近距离正面俯视，双机器人清晰可见
+        distance = 2.5
+        azimuth = 160.0
+        elevation = 25.0
 
         az_rad = np.deg2rad(azimuth)
         el_rad = np.deg2rad(elevation)
